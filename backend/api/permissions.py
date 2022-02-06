@@ -1,7 +1,7 @@
-from rest_framework.permissions import BasePermission, SAFE_METHODS
+from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 
-class RecipePermissions(BasePermission):
+class RecipePermission(BasePermission):
     """Редактирование записи только владельцем"""
 
     def has_permission(self, request, view):

@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from djoser.serializers import UserCreateSerializer
 from rest_framework import serializers
 
-from api.models import Subscribes
+from api.models import Subscribe
 
 
 class CustomUserCreateSerializer(UserCreateSerializer):
@@ -18,7 +18,7 @@ class CustomUserSerializer(UserCreateSerializer):
         user = self.context["request"].user
         if user.is_anonymous:
             return False
-        return Subscribes.objects.filter(
+        return Subscribe.objects.filter(
             subscriber=user, subscribe_on=obj
         ).exists()
 

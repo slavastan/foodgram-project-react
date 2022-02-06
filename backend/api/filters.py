@@ -1,7 +1,7 @@
 from django.db.models import Q
 from django_filters import rest_framework as filters
 
-from .models import Recipes
+from .models import Recipe
 
 
 class RecipeFilter(filters.FilterSet):
@@ -26,5 +26,5 @@ class RecipeFilter(filters.FilterSet):
         return queryset.filter(~Q(recipes_in_favorite__user=self.request.user))
 
     class Meta:
-        model = Recipes
+        model = Recipe
         fields = ['is_favorited', 'is_in_shopping_cart', 'author', 'tags']

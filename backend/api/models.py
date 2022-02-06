@@ -6,7 +6,7 @@ from django.db import models
 User = get_user_model()
 
 
-class Ingredients(models.Model):
+class Ingredient(models.Model):
     name = models.CharField(
         verbose_name="Название ингредиента", max_length=200
     )
@@ -23,7 +23,7 @@ class Ingredients(models.Model):
         return self.name
 
 
-class Tags(models.Model):
+class Tag(models.Model):
     name = models.CharField(verbose_name=("Название тега"), max_length=200)
     color = ColorField(verbose_name=("Цветовой HEX-код"), max_length=7)
     slug = models.SlugField(verbose_name=("Slug"), max_length=50)
@@ -37,9 +37,9 @@ class Tags(models.Model):
         return self.name
 
 
-class Recipes(models.Model):
+class Recipe(models.Model):
     ingredients = models.ManyToManyField(
-        Ingredients, through="RecipeIngredient"
+        Ingredient, through="RecipeIngredient",
     )
     author = models.ForeignKey(
         User,
@@ -49,7 +49,7 @@ class Recipes(models.Model):
         related_name="author",
     )
     tags = models.ManyToManyField(
-        Tags, verbose_name=("Тег рецепта"), blank=True
+        Tag, verbose_name=("Тег рецепта"), blank=True
     )
     image = models.ImageField()
     name = models.CharField(verbose_name="Название рецепта", max_length=200)
@@ -71,14 +71,14 @@ class Recipes(models.Model):
 
 
 class RecipeIngredient(models.Model):
-    ingredients = models.ForeignKey(
-        Ingredients,
+    ingredient = models.ForeignKey(
+        Ingredient,
         related_name="ingredient",
         on_delete=models.CASCADE,
         verbose_name="Ингредиент",
     )
     recipes = models.ForeignKey(
-        Recipes,
+        Recipe,
         related_name="recipe",
         on_delete=models.CASCADE,
         verbose_name="Рецепт",
@@ -93,12 +93,15 @@ class RecipeIngredient(models.Model):
     class Meta:
         verbose_name = "Ингредиент рецепта"
         verbose_name_plural = "Ингридиенты рецепта"
+        constraints = [models.UniqueConstraint(
+            fields=["ingredient", "recipes"], name="unique_recipeingridient"
+        )]
 
     def __str__(self):
         return ("Ingredients for recipe {}").format(self.recipes.name)
 
 
-class Subscribes(models.Model):
+class Subscribe(models.Model):
     subscriber = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -116,14 +119,14 @@ class Subscribes(models.Model):
         verbose_name = "Подписки"
         verbose_name_plural = "Подписки"
         constraints = [models.UniqueConstraint(
-                fields=["subscriber", "subscribe_on"], name="unique_subscribe"
+            fields=["subscriber", "subscribe_on"], name="unique_subscribe"
         )]
 
     def __str__(self) -> str:
         return f"{self.subscriber} subscribed on {self.subscribe_on}"
 
 
-class Favorites(models.Model):
+class Favorite(models.Model):
     user = models.ForeignKey(
         User,
         verbose_name=("Список избранного пользователя"),
@@ -131,7 +134,7 @@ class Favorites(models.Model):
         related_name="recipes_of_user_favorite",
     )
     recipe = models.ManyToManyField(
-        Recipes,
+        Recipe,
         verbose_name=("Избранные рецепты"),
         related_name="recipes_in_favorite",
     )
@@ -143,11 +146,12 @@ class Favorites(models.Model):
 
 
 class ShoppingCard(models.Model):
-    recipe = models.ManyToManyField(
-        Recipes,
-        verbose_name="Рецепт списка покупок",
-        related_name="recipe_in_shopping_card",
-    )
+    recipes = models.ForeignKey( 
+        Recipe,
+        on_delete=models.CASCADE,
+        verbose_name="Рецепт списка покупок", 
+        related_name="recipe_in_shopping_card", 
+    ) 
     user = models.ForeignKey(
         User,
         verbose_name=("Список покупок пользователя"),
@@ -158,6 +162,9 @@ class ShoppingCard(models.Model):
     class Meta:
         verbose_name = "Список покупок"
         verbose_name_plural = "Список покупок"
+        constraints = [models.UniqueConstraint(
+            fields=["user", "recipes"], name="unique_shoppingcard"
+        )]
 
     def __str__(self) -> str:
         return ("{}'s shopping card").format(self.user.username)

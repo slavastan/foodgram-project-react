@@ -1,68 +1,86 @@
 from django.contrib import admin
 
-from .models import *
+from .models import (
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
+    ShoppingCard,
+    Subscribe,
+    Tag,
+)
 
 
-@admin.register(Recipes)
-class RecipesAdmin(admin.ModelAdmin):
-    list_display = ('author', 'name', 'number_of_additions')
-    empty_value_display = ('-empty-')
-    list_filter = ('name', 'author', 'tags')
+@admin.register(Recipe)
+class RecipeAdmin(admin.ModelAdmin):
+    list_display = ("author", "name", "number_of_additions")
+    empty_value_display = "-empty-"
+    list_filter = ("name", "author", "tags")
 
-    @admin.display(description='Number of additions in Favorites',)
+    @admin.display(
+        description="Number of additions in Favorites",
+    )
     def number_of_additions(self, obj):
         """Сколько раз рецепт добавлялся в избранное"""
-
-        return Favorites.objects.filter(recipe__in=[obj.pk]).count()
+        return Favorite.objects.filter(recipe=obj.pk).count()
 
 
 @admin.register(RecipeIngredient)
-class RecipeIngredients(admin.ModelAdmin):
-    list_display = ('ingredients', 'recipes', 'amount')
-    empty_value_display = ('-empty-')
-    search_fields = ('ingredients', 'recipes', 'amount')
+class RecipeIngredient(admin.ModelAdmin):
+    list_display = ("ingredient", "recipes", "amount")
+    empty_value_display = "-empty-"
+    search_fields = ("ingredient", "recipes", "amount")
 
 
-@admin.register(Ingredients)
-class IngredientsAdmin(admin.ModelAdmin):
-    list_display = ('name', 'measurement_unit')
-    empty_value_display = ('-empty-')
-    list_filter = ('name',)
+@admin.register(Ingredient)
+class IngredientAdmin(admin.ModelAdmin):
+    list_display = ("name", "measurement_unit")
+    empty_value_display = "-empty-"
+    list_filter = ("name",)
 
 
-@admin.register(Tags)
-class TagsAdmin(admin.ModelAdmin):
-    list_display = ('name', 'color')
-    empty_value_display = ('-empty-')
-    search_fields = ('name', 'color')
+@admin.register(Tag)
+class TagAdmin(admin.ModelAdmin):
+    list_display = ("name", "color")
+    empty_value_display = "-empty-"
+    search_fields = ("name", "color")
 
 
-@admin.register(Favorites)
-class FavoritesAdmin(admin.ModelAdmin):
-    list_display = ('user',)
-    empty_value_display = ('-empty-')
-    search_fields = ('user',)
+@admin.register(Favorite)
+class FavoriteAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "get_recipes",
+    )
+    empty_value_display = "-empty-"
+    search_fields = ("user", "get_recipes")
 
     @staticmethod
     def get_recipes(obj):
         """Рецепты в избранном"""
-        return '\n'.join([_.name for _ in obj.recipe.all()])
+        user_favorites = Favorite.objects.filter(user=obj.user).values(
+            "recipe__name"
+        )
+        return [i["recipe__name"] for i in user_favorites]
 
 
 @admin.register(ShoppingCard)
 class ShoppingCardAdmin(admin.ModelAdmin):
-    list_display = ('user', 'get_recipes')
-    empty_value_display = ('-empty-')
-    search_fields = ('user', 'get_recipes')
+    list_display = ("user", "get_recipes")
+    empty_value_display = "-empty-"
+    search_fields = ("user", "get_recipes")
 
     @staticmethod
     def get_recipes(obj):
         """Рецепты в списке покупок"""
-        return '\n'.join([_.name for _ in obj.recipe.all()])
+        user_shopping_card = ShoppingCard.objects.filter(user=obj.user).values(
+            "recipes__name"
+        )
+        return [i["recipes__name"] for i in user_shopping_card]
 
 
-@admin.register(Subscribes)
-class SubscribesAdmin(admin.ModelAdmin):
-    list_display = ('subscriber', 'subscribe_on')
-    empty_value_display = ('-empty-')
-    search_fields = ('subscriber', 'subscribe_on')
+@admin.register(Subscribe)
+class SubscribeAdmin(admin.ModelAdmin):
+    list_display = ("subscriber", "subscribe_on")
+    empty_value_display = "-empty-"
+    search_fields = ("subscriber", "subscribe_on")

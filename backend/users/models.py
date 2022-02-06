@@ -5,13 +5,13 @@ from django.db import models
 
 class User(AbstractUser):
 
-    class Roles(models.TextChoices):
+    class Role(models.TextChoices):
         ADMIN = 'admin', 'Administrator'
         USER = 'user', 'User'
 
     email = models.EmailField('email address', unique=True)
     role = models.CharField(
-        'role', choices=Roles.choices, default=Roles.USER, max_length=30
+        'role', choices=Role.choices, default=Role.USER, max_length=30
     )
     username = models.CharField(
         'username',
