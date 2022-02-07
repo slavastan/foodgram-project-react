@@ -13,7 +13,6 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from users.models import User
-
 from .filters import RecipeFilter
 from .models import Ingredient, Recipe, Subscribe, Tag
 from .permissions import RecipePermission
@@ -74,7 +73,7 @@ def get_or_delete_obj(request, **kwargs):
             obj = model.objects.get(recipe=recipe, user=request.user)
             obj.recipe.remove(recipe)
             return Response(data=None, status=status.HTTP_204_NO_CONTENT)
-        except: 
+        except IntegrityError:
             return Response(data=None, status=status.HTTP_400_BAD_REQUEST) 
 
 
@@ -137,5 +136,5 @@ def get_or_delete_sub(request, **kwargs):
             )
             obj.delete()
             return Response(data=None, status=status.HTTP_204_NO_CONTENT)
-        except:
+        except IntegrityError:
             return Response(data=None, status=status.HTTP_400_BAD_REQUEST)

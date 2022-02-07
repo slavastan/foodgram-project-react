@@ -27,9 +27,9 @@ class RecipeAdmin(admin.ModelAdmin):
 
 @admin.register(RecipeIngredient)
 class RecipeIngredient(admin.ModelAdmin):
-    list_display = ("ingredient", "recipes", "amount")
+    list_display = ("ingredient", "recipe", "amount")
     empty_value_display = "-empty-"
-    search_fields = ("ingredient", "recipes", "amount")
+    search_fields = ("ingredient", "recipe", "amount")
 
 
 @admin.register(Ingredient)
@@ -74,9 +74,9 @@ class ShoppingCardAdmin(admin.ModelAdmin):
     def get_recipes(obj):
         """Рецепты в списке покупок"""
         user_shopping_card = ShoppingCard.objects.filter(user=obj.user).values(
-            "recipes__name"
+            "recipe__name"
         )
-        return [i["recipes__name"] for i in user_shopping_card]
+        return [i["recipe__name"] for i in user_shopping_card]
 
 
 @admin.register(Subscribe)

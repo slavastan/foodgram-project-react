@@ -77,7 +77,7 @@ class RecipeIngredient(models.Model):
         on_delete=models.CASCADE,
         verbose_name="Ингредиент",
     )
-    recipes = models.ForeignKey(
+    recipe = models.ForeignKey(
         Recipe,
         related_name="recipe",
         on_delete=models.CASCADE,
@@ -94,11 +94,11 @@ class RecipeIngredient(models.Model):
         verbose_name = "Ингредиент рецепта"
         verbose_name_plural = "Ингридиенты рецепта"
         constraints = [models.UniqueConstraint(
-            fields=["ingredient", "recipes"], name="unique_recipeingridient"
+            fields=["ingredient", "recipe"], name="unique_recipeingridient"
         )]
 
     def __str__(self):
-        return ("Ingredients for recipe {}").format(self.recipes.name)
+        return ("Ingredients for recipe {}").format(self.recipe.name)
 
 
 class Subscribe(models.Model):
@@ -146,7 +146,7 @@ class Favorite(models.Model):
 
 
 class ShoppingCard(models.Model):
-    recipes = models.ForeignKey( 
+    recipe = models.ForeignKey( 
         Recipe,
         on_delete=models.CASCADE,
         verbose_name="Рецепт списка покупок", 
@@ -163,7 +163,7 @@ class ShoppingCard(models.Model):
         verbose_name = "Список покупок"
         verbose_name_plural = "Список покупок"
         constraints = [models.UniqueConstraint(
-            fields=["user", "recipes"], name="unique_shoppingcard"
+            fields=["user", "recipe"], name="unique_shoppingcard"
         )]
 
     def __str__(self) -> str:

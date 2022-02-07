@@ -5,7 +5,6 @@ from rest_framework import serializers, validators
 from rest_framework.exceptions import ValidationError
 
 from users.serializers import CustomUserSerializer
-
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                      ShoppingCard, Subscribe, Tag)
 
@@ -57,7 +56,7 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RecipeIngredient
-        exclude = ('recipes', 'ingredients')
+        exclude = ('recipe', 'ingredients')
         extra_kwargs = {
             'id': {'read_only': False},
             'amount': {
