@@ -116,19 +116,21 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         with transaction.atomic():
-            recipe = validated_data.pop('tags')
+            amounts_ingredients = validated_data.pop('amounts_ingredients')
             saved_recipe = super().create(validated_data)
-            self.save_ingredients(saved_recipe, recipe)
+            self.save_ingredients(saved_recipe, amounts_ingredients)
         return saved_recipe
 
 
     def update(self, instance, validated_data):
         with transaction.atomic():
-            recipe = validated_data.pop('tags', None)
+            amounts_ingredients = validated_data.pop(
+                'amounts_ingredients', None
+            )
             saved_recipe = super().update(instance, validated_data)
-            if recipe:
-                saved_recipe.recipe.all().delete()
-                self.save_ingredients(instance, recipe)
+            if amounts_ingredients:
+                saved_recipe.amounts_ingredients.all().delete()
+                self.save_ingredients(instance, amounts_ingredients)
         return saved_recipe
 
 
