@@ -98,7 +98,7 @@ class RecipeIngredient(models.Model):
         )]
 
     def __str__(self):
-        return ("Ingredients for recipe {}").format(self.recipe.name)
+        return self.ingredient.name
 
 
 class Subscribe(models.Model):
@@ -150,13 +150,17 @@ class ShoppingCard(models.Model):
         Recipe,
         on_delete=models.CASCADE,
         verbose_name="Рецепт списка покупок", 
-        related_name="recipe_in_shopping_card", 
+        related_name="recipe_in_shopping_card",
+        blank=True,
+        null=True,
     ) 
     user = models.ForeignKey(
         User,
         verbose_name=("Список покупок пользователя"),
         on_delete=models.CASCADE,
         related_name="shopping_card",
+        blank=True,
+        null=True,
     )
 
     class Meta:
@@ -167,4 +171,4 @@ class ShoppingCard(models.Model):
         )]
 
     def __str__(self) -> str:
-        return ("{}'s shopping card").format(self.user.username)
+        return f'{self.user.username}:{self.recipe.name}'

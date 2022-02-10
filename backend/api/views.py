@@ -1,5 +1,5 @@
 from django.apps import apps
-from django.core.exceptions import BadRequest
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 from django.db.models import Sum
 from django.http import HttpResponse
@@ -74,7 +74,7 @@ def get_or_delete_obj(request, **kwargs):
             obj = model.objects.get(recipe=recipe, user=request.user)
             obj.recipe.remove(recipe)
             return Response(data=None, status=status.HTTP_204_NO_CONTENT)
-        except BadRequest:
+        except ObjectDoesNotExist:
             return Response(data=None, status=status.HTTP_400_BAD_REQUEST) 
 
 
@@ -137,5 +137,5 @@ def get_or_delete_sub(request, **kwargs):
             )
             obj.delete()
             return Response(data=None, status=status.HTTP_204_NO_CONTENT)
-        except BadRequest:
+        except ObjectDoesNotExist:
             return Response(data=None, status=status.HTTP_400_BAD_REQUEST)
