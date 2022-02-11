@@ -8,4 +8,4 @@ class IsAuthor(permissions.BasePermission):
 
 class EasyPermissions(permissions.BasePermission):
     def has_permission(self, request, view):
-        return (request.method in permissions.SAFE_METHODS)
+        return request.method in permissions.SAFE_METHODS

@@ -7,7 +7,7 @@ app_name = "users"
 
 router = DefaultRouter()
 router.register(
-    r'users/subscriptions', FollowsListViewSet, basename='subscriptions'
+    r"users/subscriptions", FollowsListViewSet, basename="api_follow"
 )
 router.register("users", CustomUserViewSet, basename="user")
 
@@ -15,7 +15,5 @@ router.register("users", CustomUserViewSet, basename="user")
 urlpatterns = [
     path("", include(router.urls)),
     path("auth/", include("djoser.urls.authtoken")),
-    path(
-        'users/<int:id>/subscribe/', FollowingAPI.as_view(), name='subscribe'
-    ),
+    path("users/<int:id>/subscribe/", FollowingAPI.as_view()),
 ]

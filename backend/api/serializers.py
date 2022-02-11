@@ -10,14 +10,13 @@ from .models import Ingredient, IngredientAmount, Recipe, Tag, User
 from .utlils import ingredient_creaton
 
 
-class TagSerializer(serializers.ModelSerializer):
+class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Tag
+        model = Ingredient
         fields = (
             "id",
             "name",
-            "color",
-            "slug",
+            "measurement_unit",
         )
 
 
@@ -45,6 +44,17 @@ class IngredientAmountSerializerCreateUpdate(serializers.ModelSerializer):
     class Meta:
         model = IngredientAmount
         fields = ("id", "amount")
+
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = (
+            "id",
+            "name",
+            "color",
+            "slug",
+        )
 
 
 class RecipeSerializer(serializers.ModelSerializer):
@@ -220,13 +230,3 @@ class FollowSerializer(serializers.ModelSerializer):
 
     def get_recipes_count(self, author):
         return author.recipes.count()
-
-
-class IngredientSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Ingredient
-        fields = (
-            "id",
-            "name",
-            "measurement_unit",
-        )

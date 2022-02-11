@@ -2,11 +2,13 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import get_list_or_404, get_object_or_404
 from djoser.views import UserViewSet
 from rest_framework import mixins, status, viewsets
+from rest_framework.generics import ListAPIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from users.serializers import CustomUserSerializer
+from users.serializers import CustomUserSerializer, RegistrationSerializer
+
 from .models import Follow
 from .paginations import DefaultPagination, UserPagination
 

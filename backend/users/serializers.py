@@ -12,19 +12,19 @@ class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            'email',
-            'id',
-            'username',
-            'first_name',
-            'last_name',
-            'is_subscribed',
-            'recipes',
-            'recipes_count'
+            "email",
+            "id",
+            "username",
+            "first_name",
+            "last_name",
+            "is_subscribed",
+            "recipes",
+            "recipes_count",
         )
 
     def get_is_subscribed(self, user_object):
         return Follow.objects.filter(
-            user=self.context['request'].user.id, follower=user_object.id
+            user=self.context["request"].user.id, follower=user_object.id
         ).exists()
 
     def get_recipes_count(self, user_object):
@@ -32,6 +32,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
     def get_recipes(self, user_object):
         from api.serializers import RecipeForListSerializer
+
         return RecipeForListSerializer(
             user_object.recipes.all(), read_only=True, many=True
         ).data
@@ -40,18 +41,17 @@ class CustomUserSerializer(serializers.ModelSerializer):
 class RegistrationSerializer(UserSerializer):
     class Meta:
         model = User
-        fields = ['email', 'username', 'first_name', 'last_name', 'password']
+        fields = ["email", "username", "first_name", "last_name", "password"]
 
 
 class UserRecipeSerializer(CustomUserSerializer):
-
     class Meta:
         model = User
         fields = (
-            'email',
-            'id',
-            'username',
-            'first_name',
-            'last_name',
-            'is_subscribed'
+            "email",
+            "id",
+            "username",
+            "first_name",
+            "last_name",
+            "is_subscribed",
         )
