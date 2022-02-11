@@ -7,8 +7,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from users.serializers import CustomUserSerializer, RegistrationSerializer
-
+from users.serializers import CustomUserSerializer
 from .models import Follow
 from .paginations import DefaultPagination, UserPagination
 
