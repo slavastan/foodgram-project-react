@@ -1,34 +1,28 @@
 from django.urls import include, path, re_path
-from rest_framework import routers
+from rest_framework.routers import DefaultRouter
 
-from . import views
+from .views import (FavoriteCreateDestroy, IngredientViewSet, RecipeViewSet,
+                    ShoppingListCreateDestroy, TagViewSet)
 
-router_v1 = routers.DefaultRouter()
+router_v1 = DefaultRouter()
 
-router_v1.register('subscribes', views.SubscribeViewSet, basename='subs')
-router_v1.register('recipes', views.RecipeView, basename='recipes')
-router_v1.register('tags', views.TagViewSet, basename='tags')
-router_v1.register(
-    'ingredients', views.IngredientViewSet, basename='ingredients'
-)
+router_v1.register('ingredients', IngredientViewSet, basename='ingredients')
+router_v1.register('recipes', RecipeViewSet, basename='recipes')
+router_v1.register('tags', TagViewSet, basename='tags')
+
 
 urlpatterns = [
     path(
-        'recipes/download_shopping_cart/',
-        views.download_shopping_card,
-        name='download_shopping_card',
+        '', include(router_v1.urls),
     ),
-    path(
-        'recipes/<int:pk>/shopping_cart/',
-        views.get_or_delete_obj,
-        {'model': 'ShoppingCard'},
-        name='shopping_cart',
+    re_path(
+        r'recipes/(?P<recipe_id>\d+)/favorite/',
+        FavoriteCreateDestroy.as_view(),
+        name='favorite',
     ),
-    path(
-        'recipes/<int:pk>/favorite/',
-        views.get_or_delete_obj,
-        {'model': 'Favorite'},
-        name='favorites',
+    re_path(
+        r'recipes/(?P<recipe_id>\d+)/shopping_cart/',
+        ShoppingListCreateDestroy.as_view(),
+        name='shopping-list',
     ),
-    re_path('', include(router_v1.urls)),
 ]

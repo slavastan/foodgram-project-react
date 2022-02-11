@@ -1,141 +1,202 @@
-from django.apps import apps
-from django.core.exceptions import ObjectDoesNotExist
-from django.db import IntegrityError
+import io
+
 from django.db.models import Sum
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
-from django_filters import rest_framework as filters
-from reportlab.lib.units import cm
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfgen import canvas
-from rest_framework import generics, permissions, status, viewsets
-from rest_framework.decorators import api_view, permission_classes
+from django.http.response import FileResponse
+from fpdf import FPDF
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.generics import GenericAPIView, get_object_or_404
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from users.models import User
-from .filters import RecipeFilter
-from .models import Ingredient, Recipe, Subscribe, Tag
-from .permissions import RecipePermission
-from .serializers import (IngredientSerializer, RecipeSerializer,
-                          RecipeShortSerializer, SubscribeSerializer,
-                          TagSerializer, UserSubscribeSerializer)
+from .filters import IngredientFilter, RecipeFilter
+from .models import Favorite, Ingredient, Recipe, ShoppingList, Tag
+from .paginations import Pagination
+from .permissions import IsAuthor
+from .serializers import (IngredientSerializer, RecipeCreateUpdateSerializer,
+                          RecipeForListSerializer, RecipeSerializer,
+                          TagSerializer)
 
 
-class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
+class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
-    model = Ingredient
     serializer_class = IngredientSerializer
-    pagination_class = None
+    permission_classes = [AllowAny]
+    filter_class = IngredientFilter
 
 
-class TagViewSet(viewsets.ReadOnlyModelViewSet):
+class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
-    model = Tag
     serializer_class = TagSerializer
-    pagination_class = None
+    permission_classes = [AllowAny]
 
 
-class SubscribeViewSet(viewsets.ModelViewSet):
-    queryset = Subscribe.objects.all()
-    model = Subscribe
-    serializer_class = SubscribeSerializer
-    pagination_class = None
-
-
-class RecipeView(viewsets.ModelViewSet):
-    queryset = Recipe.objects.all()
-    model = Recipe
+class RecipeViewSet(viewsets.ModelViewSet):
+    queryset = Recipe.objects.all().order_by('-pub_date')
     serializer_class = RecipeSerializer
-    permission_classes = (RecipePermission,)
-    filter_backends = (filters.DjangoFilterBackend,)
-    filterset_class = RecipeFilter
-    ordering = ["-pk"]
+    pagination_class = Pagination
+    permission_classes_by_action = {
+        'create': [IsAuthenticated],
+        'list': [AllowAny],
+        'retrieve': [AllowAny],
+        'partial_update': [IsAuthor],
+        'update': [IsAuthor],
+        'destroy': [IsAuthor],
+    }
+    filter_class = RecipeFilter
 
+    def get_serializer_class(self):
+        if self.request.method in ('POST', 'PUT', 'PATCH'):
+            return RecipeCreateUpdateSerializer
+        else:
+            return RecipeSerializer
 
-@api_view(["GET", "DELETE"])
-@permission_classes([permissions.IsAuthenticated])
-def get_or_delete_obj(request, **kwargs):
-    model = apps.get_model('api', kwargs['model'])
-    id_recipe = kwargs.get('pk')
-    recipe = get_object_or_404(Recipe, id=id_recipe)
-    ser = RecipeShortSerializer(recipe, context={'request': request})
-    if request.method == "GET":
-        obj, created = model.objects.get_or_create(user=request.user)
-        if created:
-            obj.recipe.add(recipe)
-            return Response(ser.data, status=status.HTTP_201_CREATED)
-        if obj.recipe.filter(pk=recipe.pk).exists():
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        obj.recipe.add(recipe)
-        return Response(ser.data, status=status.HTTP_201_CREATED)
-    elif request.method == "DELETE":
-        try:
-            obj = model.objects.get(recipe=recipe, user=request.user)
-            obj.recipe.remove(recipe)
-            return Response(data=None, status=status.HTTP_204_NO_CONTENT)
-        except ObjectDoesNotExist:
-            return Response(data=None, status=status.HTTP_400_BAD_REQUEST) 
+    def list(self, request, *args, **kwargs):
+        return super().list(self, request, *args, **kwargs)
 
-
-@api_view(["GET"])
-@permission_classes([permissions.IsAuthenticated])
-def download_shopping_card(request, **kwargs):
-    result_ingr = (
-        Recipe.objects.filter(recipe_in_shopping_card__user=request.user)
-        .order_by("ingredients__name")
-        .values("ingredients__name", "ingredients__measurement_unit")
-        .annotate(total=Sum("recipe__amount"))
-    )
-    response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = 'attachment; filename="ShoppingCart.pdf"'
-    p = canvas.Canvas(response)
-    pdfmetrics.registerFont(TTFont("DejaVuSans", "./DejaVuSans.ttf"))
-    p.setFont("DejaVuSans", 32)
-    textobject = p.beginText(2 * cm, 29.7 * cm - 2 * cm)
-    for result in result_ingr:
-        textobject.textLine(
-            f"{result['ingredients__name']}, "
-            f"{result['ingredients__measurement_unit']} --- {result['total']}"
+    def create(self, request, *args, **kwargs):
+        kwargs.setdefault('context', self.get_serializer_context())
+        create_serializer = RecipeCreateUpdateSerializer(
+            data=request.data, *args, **kwargs
         )
-    p.drawText(textobject)
-    p.showPage()
-    p.save()
-    return response
+        create_serializer.is_valid(raise_exception=True)
+        recipe = create_serializer.save(author=self.request.user)
 
+        retrieve_serializer = RecipeSerializer(
+            instance=recipe, *args, **kwargs
+        )
+        headers = self.get_success_headers(retrieve_serializer.data)
+        return Response(
+            retrieve_serializer.data,
+            status=status.HTTP_201_CREATED,
+            headers=headers,
+        )
 
-class ListSubscribesView(generics.ListAPIView):
-    serializer_class = UserSubscribeSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        kwargs.setdefault('context', self.get_serializer_context())
+        kwargs.pop('pk')
 
-    def get_queryset(self):
-        return User.objects.filter(subscribe_on__subscriber=self.request.user)
+        instance = self.get_object()
+        update_serializer = RecipeCreateUpdateSerializer(
+            instance,
+            data=request.data,
+            partial=partial,
+        )
+        update_serializer.is_valid(raise_exception=True)
+        instance = update_serializer.save(author=self.request.user)
+        retrieve_serializer = RecipeSerializer(
+            instance=instance, **kwargs
+        )
 
+        if getattr(instance, '_prefetched_objects_cache', None):
+            instance._prefetched_objects_cache = {}
 
-@api_view(["GET", "DELETE"])
-@permission_classes([permissions.IsAuthenticated])
-def get_or_delete_sub(request, **kwargs):
-    user_to_subscribe = get_object_or_404(User, pk=kwargs['pk'])
-    ser = UserSubscribeSerializer(
-        user_to_subscribe, context={'request': request}
+        return Response(retrieve_serializer.data)
+
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
+
+    @action(
+        detail=False,
+        methods=['get'],
+        url_path='download_shopping_cart',
+        url_name='download_shopping_cart',
     )
-    if request.method == "GET":
-        try:
-            _, created = Subscribe.objects.get_or_create(
-                subscriber=request.user, subscribe_on=user_to_subscribe
-            )
-        except IntegrityError:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        if created:
-            return Response(ser.data, status=status.HTTP_201_CREATED)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+    def download_shopping_cart(self, request):
+        ingredients_amounts = Recipe.objects.filter(
+            shopping_list__user=request.user
+        ).order_by('ingredients__name').values(
+            'ingredients__name', 'ingredients__measurement_unit'
+        ).annotate(amount=Sum('amount_ingredients__amount'))
 
-    elif request.method == "DELETE":
-        try:
-            obj = Subscribe.objects.get(
-                subscriber=request.user, subscribe_on=user_to_subscribe
+        pdf = FPDF()
+        pdf.add_font(
+            "DejaVu", "", "./api/fonts/DejaVuSansCondensed.ttf", uni=True
+        )
+        pdf.set_font("DejaVu", "", 14)
+        pdf.add_page()
+        for item in ingredients_amounts:
+            name, amount, measurement_unit = (
+                item['ingredients__name'], item['amount'], item[
+                    'ingredients__measurement_unit'
+                ]
             )
-            obj.delete()
-            return Response(data=None, status=status.HTTP_204_NO_CONTENT)
-        except ObjectDoesNotExist:
-            return Response(data=None, status=status.HTTP_400_BAD_REQUEST)
+            text = f'{name} ({measurement_unit}) - {amount}'
+
+            pdf.cell(0, 10, txt=text, ln=1)
+
+        string_file = pdf.output(dest='S')
+        response = FileResponse(
+            io.BytesIO(string_file.encode('latin1')),
+            content_type='application/pdf',
+        )
+        response[
+            'Content-Disposition'
+        ] = 'attachment; filename="shopong-list.pdf"'
+
+        return response
+
+
+class FavoriteCreateDestroy(GenericAPIView):
+    def get(self, request, recipe_id):
+        kwargs = {'context': self.get_serializer_context()}
+        recipe = get_object_or_404(Recipe, id=recipe_id)
+
+        if not Favorite.objects.filter(
+            user=request.user,
+            recipe=recipe
+        ).exists():
+            Favorite.objects.create(user=request.user, recipe=recipe)
+            serializer = RecipeForListSerializer(instance=recipe, **kwargs)
+            return Response(
+                data=serializer.data,
+                status=status.HTTP_201_CREATED
+            )
+        return Response('Уже в избранных', status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, recipe_id):
+        if Favorite.objects.filter(
+            user=request.user,
+            recipe_id=recipe_id
+        ).exists():
+            Favorite.objects.filter(
+                user=request.user,
+                recipe_id=recipe_id
+            ).delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response('Уже удален из избранных', status.HTTP_400_BAD_REQUEST)
+
+
+class ShoppingListCreateDestroy(GenericAPIView):
+    def get(self, request, recipe_id):
+        kwargs = {'context': self.get_serializer_context()}
+        recipe = get_object_or_404(Recipe, id=recipe_id)
+
+        if not ShoppingList.objects.filter(
+            user=request.user,
+            recipe=recipe
+        ).exists():
+            ShoppingList.objects.create(
+                user=request.user,
+                recipe=recipe
+            )
+            serializer = RecipeForListSerializer(instance=recipe, **kwargs)
+            return Response(
+                data=serializer.data,
+                status=status.HTTP_201_CREATED
+            )
+        return Response('Уже в корзине', status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, recipe_id):
+        if ShoppingList.objects.filter(
+            user=request.user,
+            recipe_id=recipe_id
+        ).exists():
+            ShoppingList.objects.filter(
+                user=request.user,
+                recipe_id=recipe_id
+            ).delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response('Уже удален из корзины', status.HTTP_400_BAD_REQUEST)

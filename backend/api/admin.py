@@ -1,14 +1,7 @@
 from django.contrib import admin
 
-from .models import (
-    Favorite,
-    Ingredient,
-    Recipe,
-    RecipeIngredient,
-    ShoppingCard,
-    Subscribe,
-    Tag,
-)
+from .models import (Favorite, Ingredient, IngredientAmount, Recipe,
+                     ShoppingList, Tag)
 
 
 @admin.register(Recipe)
@@ -25,8 +18,8 @@ class RecipeAdmin(admin.ModelAdmin):
         return Favorite.objects.filter(recipe=obj.pk).count()
 
 
-@admin.register(RecipeIngredient)
-class RecipeIngredient(admin.ModelAdmin):
+@admin.register(IngredientAmount)
+class IngredientAmount(admin.ModelAdmin):
     list_display = ("ingredient", "recipe", "amount")
     empty_value_display = "-empty-"
     search_fields = ("ingredient", "recipe", "amount")
@@ -64,7 +57,7 @@ class FavoriteAdmin(admin.ModelAdmin):
         return [i["recipe__name"] for i in user_favorites]
 
 
-@admin.register(ShoppingCard)
+@admin.register(ShoppingList)
 class ShoppingCardAdmin(admin.ModelAdmin):
     list_display = ("user", "get_recipes")
     empty_value_display = "-empty-"
@@ -73,14 +66,7 @@ class ShoppingCardAdmin(admin.ModelAdmin):
     @staticmethod
     def get_recipes(obj):
         """Рецепты в списке покупок"""
-        user_shopping_card = ShoppingCard.objects.filter(user=obj.user).values(
+        user_shopping_card = ShoppingList.objects.filter(user=obj.user).values(
             "recipe__name"
         )
         return [i["recipe__name"] for i in user_shopping_card]
-
-
-@admin.register(Subscribe)
-class SubscribeAdmin(admin.ModelAdmin):
-    list_display = ("subscriber", "subscribe_on")
-    empty_value_display = "-empty-"
-    search_fields = ("subscriber", "subscribe_on")

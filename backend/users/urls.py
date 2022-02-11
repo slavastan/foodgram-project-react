@@ -1,14 +1,21 @@
 from django.urls import include, path
+from rest_framework.routers import DefaultRouter
 
-from api.views import ListSubscribesView, get_or_delete_sub
+from users.views import CustomUserViewSet, FollowingAPI, FollowsListViewSet
+
+app_name = "users"
+
+router = DefaultRouter()
+router.register(
+    r'users/subscriptions', FollowsListViewSet, basename='subscriptions'
+)
+router.register("users", CustomUserViewSet, basename="user")
+
 
 urlpatterns = [
-    path('', include('djoser.urls')),
-    path('auth/', include('djoser.urls.authtoken')),
+    path("", include(router.urls)),
+    path("auth/", include("djoser.urls.authtoken")),
     path(
-        'users/subscriptions/',
-        ListSubscribesView.as_view(),
-        name='subscriptions'
+        'users/<int:id>/subscribe/', FollowingAPI.as_view(), name='subscribe'
     ),
-    path('users/<int:pk>/subscribe/', get_or_delete_sub, name='subscribe'),
 ]

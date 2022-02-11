@@ -1,17 +1,14 @@
 import os
 
-from dotenv import load_dotenv
-
-load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-SECRET_KEY = 'ad)qw4ed*6r(vo=315u)udv4q*tyzs7s%_@s*%6#4&n)kil!x-'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 DEBUG = True
 
-ALLOWED_HOSTS = '*'
+ALLOWED_HOSTS = ['*']
 
 
 INSTALLED_APPS = [
@@ -24,12 +21,10 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'djoser',
-    'colorfield',
     'django_filters',
     'users',
     'api',
 ]
-
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -63,9 +58,13 @@ WSGI_APPLICATION = 'foodgram.wsgi.application'
 
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
+    'default': {
+        'ENGINE': os.environ.get('DB_ENGINE', default='django.db.backends.postgresql'),
+        'NAME': os.getenv('DB_NAME', default='postgres'),
+        'USER': os.getenv('POSTGRES_USER', default='postgres'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', default='postgres'),
+        'HOST': os.getenv('DB_HOST', default='db'),
+        'PORT': os.getenv('DB_PORT', default='5432')
     }
 }
 
@@ -101,33 +100,30 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, '/var/html/static/')
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, "/var/html/media/") 
+MEDIA_ROOT = os.path.join(BASE_DIR, "/var/html/media/")
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
-AUTH_USER_MODEL = 'users.User'
+AUTH_USER_MODEL = "users.User"
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
+    'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
-    ),
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ],
-    'DEFAULT_PAGINATION_CLASS': 'api.paginators.CustomPageNumberPagination',
-    'PAGE_SIZE': 10
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend"
+    ],
 }
 
 DJOSER = {
+    'LOGIN_FIELD': 'email',
     'SERIALIZERS': {
-        'user_create': 'users.serializers.CustomUserCreateSerializer',
-        'user': 'users.serializers.CustomUserSerializer',
-        'current_user': 'users.serializers.CustomUserSerializer'
+        'user': 'users.serializers.RegistrationSerializer',
+        'current_user': 'users.serializers.RegistrationSerializer',
     },
     'PERMISSIONS': {
         'user_list': ['rest_framework.permissions.AllowAny'],
-        'user': ['rest_framework.permissions.AllowAny'],
+        'user': ['rest_framework.permissions.IsAuthenticated'],
     },
-    'LOGIN_FIELD': 'email',
     'HIDE_USERS': False,
 }
