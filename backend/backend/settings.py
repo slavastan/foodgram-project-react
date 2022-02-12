@@ -3,11 +3,11 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-SECRET_KEY = 'wc!#4+$ab10_l%um_6ve)activ648==^dd4b58)&eq*m43)e7%'
+SECRET_KEY = '1a1053_s&y*vhp40m8d)y3nbgivv#l78i6hacct!=@d=2f4fp3'
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['62.84.122.155', '*']
 
 
 INSTALLED_APPS = [
