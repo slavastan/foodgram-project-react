@@ -1,11 +1,13 @@
 import os
 
+import environ
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+env = environ.Env()
+environ.Env.read_env()
 
-SECRET_KEY = '1a1053_s&y*vhp40m8d)y3nbgivv#l78i6hacct!=@d=2f4fp3'
-
-DEBUG = True
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 ALLOWED_HOSTS = ['62.84.122.155', '*']
 
