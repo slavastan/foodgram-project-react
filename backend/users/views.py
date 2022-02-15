@@ -63,3 +63,4 @@ class FollowsListViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         follow_objects = get_list_or_404(Follow, user=self.request.user)
         subscriptions = [object_.follower for object_ in follow_objects]
         return subscriptions
+    
