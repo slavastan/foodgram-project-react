@@ -95,7 +95,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         return response
 
-
     def favorite_and_shopping(self, related):
         recipe = self.get_object()
         if self.request.method == "DELETE":
